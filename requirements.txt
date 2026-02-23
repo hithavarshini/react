@@ -11,3 +11,4 @@ numpy
 python-dotenv
 streamlit
 streamlit_pdf_viewer
+scikit-learn
