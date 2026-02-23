@@ -14,3 +14,4 @@ sentence-transformers
 streamlit
 streamlit_pdf_viewer
 scikit-learn
+faiss-cpu
