@@ -9,6 +9,7 @@ langchain_text_splitters
 nltk
 numpy
 python-dotenv
+pypdf
 streamlit
 streamlit_pdf_viewer
 scikit-learn
