@@ -1,4 +1,6 @@
 import nltk
+nltk.download('punkt')
+nltk.download('punkt_tab')
 from nltk.translate.bleu_score import SmoothingFunction, sentence_bleu
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
