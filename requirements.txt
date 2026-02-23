@@ -10,6 +10,7 @@ nltk
 numpy
 python-dotenv
 pypdf
+sentence-transformer
 streamlit
 streamlit_pdf_viewer
 scikit-learn
