@@ -1,0 +1,9 @@
+[theme]
+base="light"
+backgroundColor="white"
+primaryColor="blue"
+
+[theme.sidebar]
+base="light"
+backgroundColor="white"
+primaryColor="blue"
