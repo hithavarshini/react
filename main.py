@@ -74,7 +74,8 @@ if uploaded_file:
             st.markdown(query)
         st.session_state.chat_history.append(HumanMessage(content=query))
         docs=comp_retriever.invoke(query)
-        if not check_prompt(query, docs[0].page_content if docs else ""):
+        is_suggested = query in st.session_state.suggestions
+        if not is_suggested and not check_prompt(query, docs[0].page_content if docs else ""):
             with st.chat_message("assistant"):
                 msg="I am sorry, I cannot answer questions out of docs"
                 st.error(msg)
