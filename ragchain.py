@@ -17,8 +17,9 @@ def rag_chain(model,comp_retriever):
     prompt=(
         "You are an assistant for document based question answering tasks. "
         "Use the following retrieved context to answer the question. "
-        "If the answer is in the context, provide it concisely in three sentences maximum. "
-        "If the context does not contain the answer, say 'I am not sure.'"
+        "If the answer is in the context, provide it clearly and concisely in three sentences maximum. "
+        "If you can partially answer from the context, provide what you know. "
+        "Only say 'I am not sure' if the context is completely unrelated to the question."
         "\n\n"
         "{context}"
     )
