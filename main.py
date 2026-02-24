@@ -27,7 +27,7 @@ if 'chat_history' not in st.session_state:
 st.markdown("""
 <div class='hero-container'>
     <div class='hero-badge'>DOCUMENT AI</div>
-    <div class='hero-title'>DocQA Intelligence</div>
+    <div class='hero-title'>Document Intelligence</div>
     <div class='hero-subtitle'>Transform your documents into actionable insights with AI. Ask questions, extract knowledge, and accelerate decision-making with precision and speed.</div>
 </div>
 """, unsafe_allow_html=True)
