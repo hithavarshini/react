@@ -1,7 +1,8 @@
 
 from langchain_community.vectorstores import FAISS
 from langchain_classic.retrievers import ContextualCompressionRetriever
-from langchain_classic.retrievers.document_compressors import FlashrankRerank, CrossEncoderReranker, JinaRerank
+from langchain_classic.retrievers.document_compressors import FlashrankRerank, CrossEncoderReranker
+from langchain_community.document_compressors import JinaRerank
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 def retrieve(df,embeddings,compressor):
     vect=FAISS.from_documents(df,embeddings)
