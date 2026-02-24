@@ -7,7 +7,7 @@ from langchain_groq import ChatGroq
 from docloader import load_doc, get_path
 from splitter import get_splitter
 from langchain_huggingface import HuggingFaceEmbeddings
-from rerank import retrieve
+from rerank import retrieve, get_reranker
 from ragchain import rag_chain
 from pdf import pdf_display
 from evalm import cos_similarity, bleu_score, answer_relevance
@@ -50,6 +50,7 @@ if uploaded_file:
         
         st.markdown("<div class='section-header'>Configuration</div>", unsafe_allow_html=True)
         chunking_tech=st.selectbox("Select chunking technique",["Recursive Character Textsplitter","Character Text Splitter","Token based Chunking","Semantic Chunking"])
+        rank_tech=st.selectbox("Select reranking technique",["Flashrank Reranker","BGE Ranker","Jina Rerank"])
         
         if 'comp_retriever' not in st.session_state:
             splitter=get_splitter(chunking_tech)
@@ -57,8 +58,9 @@ if uploaded_file:
             os.environ["GROQ_API_KEY"]=os.getenv("GROQ_API_KEY")
             model=ChatGroq(model="llama-3.1-8b-instant")
             embeddings=HuggingFaceEmbeddings(model="sentence-transformers/all-MiniLM-L6-v2")
-            st.markdown("<div class='status-badge'>Flashrank Reranker Active</div>", unsafe_allow_html=True)
-            st.session_state.comp_retriever=retrieve(df,embeddings)
+            compressor=get_reranker(rank_tech)
+            st.markdown(f"<div class='status-badge'>{rank_tech} Active</div>", unsafe_allow_html=True)
+            st.session_state.comp_retriever=retrieve(df,embeddings,compressor)
             st.session_state.chain=rag_chain(model,st.session_state.comp_retriever)
             st.session_state.embeddings=embeddings
             res=st.session_state.chain.invoke({'input':'Generate exactly 3 specific questions that can be answered from this document. Format: one question per line, no numbering, no bullets.', 'chat_history':[]})
@@ -80,8 +82,33 @@ if uploaded_file:
                 role = "user" if isinstance(msg, HumanMessage) else "assistant"
                 with st.chat_message(role):
                     if isinstance(msg, AIMessage) and '|||PAGE:' in msg.content:
-                        answer, page_info = msg.content.split('|||PAGE:')
+                        parts = msg.content.split('|||')
+                        answer = parts[0]
+                        page_info = parts[1].replace('PAGE:', '')
                         st.markdown(answer)
+                        if len(parts) > 2:
+                            with st.expander("📊 Evaluation Metrics"):
+                                cos_val = parts[2].replace('COS:', '')
+                                rel_val = parts[3].replace('REL:', '')
+                                bleu_val = parts[4].replace('BLEU:', '')
+                                st.markdown(f"""
+                                <div class='enterprise-card'>
+                                    <div class='metric-label'>Cosine Similarity</div>
+                                    <div class='metric-value'>{cos_val}</div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                st.markdown(f"""
+                                <div class='enterprise-card'>
+                                    <div class='metric-label'>Answer Relevance</div>
+                                    <div class='metric-value'>{rel_val}</div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                st.markdown(f"""
+                                <div class='enterprise-card'>
+                                    <div class='metric-label'>BLEU Score</div>
+                                    <div class='metric-value'>{bleu_val}</div>
+                                </div>
+                                """, unsafe_allow_html=True)
                         if st.button(f"📄 Go to Page {page_info}", key=f"history_page_{idx}"):
                             st.session_state.pdf_page = int(page_info)
                             st.rerun()
