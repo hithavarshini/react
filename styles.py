@@ -252,6 +252,24 @@ button[kind="primary"]:hover, .stButton > button:hover {
     border-right: 1px solid #e5e7eb !important;
 }
 
+[data-testid="stSidebar"][aria-expanded="true"] {
+    width: 40vw !important;
+    min-width: 40vw !important;
+    max-width: 40vw !important;
+}
+
+[data-testid="stSidebar"][aria-expanded="true"] > div:first-child {
+    width: 40vw !important;
+    min-width: 40vw !important;
+    max-width: 40vw !important;
+}
+
+section[data-testid="stSidebar"] > div {
+    width: 40vw !important;
+    min-width: 40vw !important;
+    max-width: 40vw !important;
+}
+
 /* Info/Success boxes */
 .stSuccess {
     background: #ffffff !important;
