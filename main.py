@@ -16,7 +16,7 @@ from styles import get_custom_css
 from dotenv import load_dotenv
 load_dotenv()
 st.set_page_config(
-    page_title="DocQA | Document Intelligence",
+    page_title="Document Intelligence",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -49,8 +49,8 @@ if uploaded_file:
             pdf_display(get_path(uploaded_file))
         
         st.markdown("<div class='section-header'>Configuration</div>", unsafe_allow_html=True)
-        chunking_tech=st.selectbox("Select chunking technique",["Recursive Character Textsplitter","Character Text Splitter","Token based Chunking","Semantic Chunking"])
-        rank_tech=st.selectbox("Select reranking technique",["Flashrank Reranker","BGE Ranker","Jina Rerank"])
+        chunking_tech=st.selectbox("Select chunking technique",["Recursive Character Textsplitter","Semantic Chunking","Hybrid Chunking"])
+        rank_tech=st.selectbox("Select reranking technique",["Flashrank Reranker","BGE Ranker","CoIBERT Reranker"])
         
         if 'comp_retriever' not in st.session_state:
             splitter=get_splitter(chunking_tech)
@@ -86,34 +86,36 @@ if uploaded_file:
                         answer = parts[0]
                         page_info = parts[1].replace('PAGE:', '')
                         st.markdown(answer)
-                        if len(parts) > 2:
-                            with st.expander("📊 Evaluation Metrics"):
-                                cos_val = parts[2].replace('COS:', '')
-                                rel_val = parts[3].replace('REL:', '')
-                                bleu_val = parts[4].replace('BLEU:', '')
-                                st.markdown(f"""
-                                <div class='enterprise-card'>
-                                    <div class='metric-label'>Cosine Similarity</div>
-                                    <div class='metric-value'>{cos_val}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
-                                st.markdown(f"""
-                                <div class='enterprise-card'>
-                                    <div class='metric-label'>Answer Relevance</div>
-                                    <div class='metric-value'>{rel_val}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
-                                st.markdown(f"""
-                                <div class='enterprise-card'>
-                                    <div class='metric-label'>BLEU Score</div>
-                                    <div class='metric-value'>{bleu_val}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
                         if st.button(f"📄 Go to Page {page_info}", key=f"history_page_{idx}"):
                             st.session_state.pdf_page = int(page_info)
                             st.rerun()
                     else:
                         st.markdown(msg.content)
+                if isinstance(msg, AIMessage) and '|||PAGE:' in msg.content:
+                    parts = msg.content.split('|||')
+                    if len(parts) > 2:
+                        with st.expander("📊 Evaluation Metrics"):
+                            cos_val = parts[2].replace('COS:', '')
+                            rel_val = parts[3].replace('REL:', '')
+                            bleu_val = parts[4].replace('BLEU:', '')
+                            st.markdown(f"""
+                            <div class='enterprise-card'>
+                                <div class='metric-label'>Cosine Similarity</div>
+                                <div class='metric-value'>{cos_val}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            st.markdown(f"""
+                            <div class='enterprise-card'>
+                                <div class='metric-label'>Answer Relevance</div>
+                                <div class='metric-value'>{rel_val}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                            st.markdown(f"""
+                            <div class='enterprise-card'>
+                                <div class='metric-label'>BLEU Score</div>
+                                <div class='metric-value'>{bleu_val}</div>
+                            </div>
+                            """, unsafe_allow_html=True)
         
         query = st.chat_input('Enter your question here...')
         if 'selected_question' in st.session_state:
@@ -132,34 +134,34 @@ if uploaded_file:
                     st.error(msg)
                     st.session_state.chat_history.append(AIMessage(content=msg))
             else:
-                res=cos_similarity([query],docs,embeddings)[0][0]
                 result=chain.invoke({'input':query,'chat_history':st.session_state.chat_history})
                 pg=(docs[0].metadata.get('page',0)+1)
-                answer_with_page = f"{result['answer']}|||PAGE:{pg}"
-                st.session_state.chat_history.append(AIMessage(content=answer_with_page))
+                res=cos_similarity([query],docs,embeddings)[0][0]
+                rel=answer_relevance(result['answer'],docs[0].page_content,embeddings)
+                b=bleu_score([result['answer']], [docs[0].page_content])
+                answer_with_metrics = f"{result['answer']}|||PAGE:{pg}|||COS:{res:.4f}|||REL:{rel:.4f}|||BLEU:{b:.4f}"
+                st.session_state.chat_history.append(AIMessage(content=answer_with_metrics))
                 with st.chat_message("assistant"):
                     st.success(result['answer'])
-                    with st.expander("📊 Evaluation Metrics"):
-                        rel=answer_relevance(result['answer'],docs[0].page_content,embeddings)
-                        a=bleu_score([result['answer']], [docs[0].page_content])
-                        st.markdown(f"""
-                        <div class='enterprise-card'>
-                            <div class='metric-label'>Cosine Similarity</div>
-                            <div class='metric-value'>{res:.4f}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        st.markdown(f"""
-                        <div class='enterprise-card'>
-                            <div class='metric-label'>Answer Relevance</div>
-                            <div class='metric-value'>{rel:.4f}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
-                        st.markdown(f"""
-                        <div class='enterprise-card'>
-                            <div class='metric-label'>BLEU Score</div>
-                            <div class='metric-value'>{a:.4f}</div>
-                        </div>
-                        """, unsafe_allow_html=True)
                     if st.button(f"📄 Go to Page {pg}", key=f"goto_page_{len(st.session_state.chat_history)}"):
                         st.session_state.pdf_page = pg
                         st.rerun()
+                with st.expander("📊 Evaluation Metrics"):
+                    st.markdown(f"""
+                    <div class='enterprise-card'>
+                        <div class='metric-label'>Cosine Similarity</div>
+                        <div class='metric-value'>{res:.4f}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div class='enterprise-card'>
+                        <div class='metric-label'>Answer Relevance</div>
+                        <div class='metric-value'>{rel:.4f}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.markdown(f"""
+                    <div class='enterprise-card'>
+                        <div class='metric-label'>BLEU Score</div>
+                        <div class='metric-value'>{b:.4f}</div>
+                    </div>
+                    """, unsafe_allow_html=True)

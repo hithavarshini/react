@@ -1,8 +1,6 @@
-
 from langchain_community.vectorstores import FAISS
 from langchain_classic.retrievers import ContextualCompressionRetriever
 from langchain_classic.retrievers.document_compressors import FlashrankRerank, CrossEncoderReranker
-from langchain_community.document_compressors import JinaRerank
 from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 def retrieve(df,embeddings,compressor):
     vect=FAISS.from_documents(df,embeddings)
@@ -10,10 +8,11 @@ def retrieve(df,embeddings,compressor):
     return ContextualCompressionRetriever(base_compressor=compressor,base_retriever=retriever)
 def get_reranker(method):
     if method=='Flashrank Reranker':
-        return FlashrankRerank()
+        return FlashrankRerank(top_n=3)
     elif method=='BGE Ranker':
         model=HuggingFaceCrossEncoder(model_name="BAAI/bge-reranker-base")
-        return CrossEncoderReranker(model=model)
+        return CrossEncoderReranker(model=model, top_n=3)
     else:
-        return JinaRerank()
+        model=HuggingFaceCrossEncoder(model_name="colbert-ir/colbertv2.0")
+        return CrossEncoderReranker(model=model, top_n=3)
     
