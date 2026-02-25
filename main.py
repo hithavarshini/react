@@ -1,7 +1,6 @@
 import os
 import tempfile
 import streamlit as st
-import threading
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_groq import ChatGroq
 from docloader import load_doc, get_path
