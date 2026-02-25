@@ -164,3 +164,7 @@ if uploaded_file:
                         <div class='metric-value'>{b:.4f}</div>
                     </div>
                     """, unsafe_allow_html=True)
+                with st.expander("Related questions"):
+                    ans=chain.invoke({'input':'Generate 3 questions related to the query and the document','chat_history':st.session_state.chat_history})
+                    st.markdown(ans['answer'])
+
