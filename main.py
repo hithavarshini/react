@@ -140,6 +140,9 @@ if uploaded_file:
             query = st.chat_input('Enter your question here...')
         
         if query:
+            with st.chat_message("user"):
+                st.markdown(query)
+            st.session_state.chat_history.append(HumanMessage(content=query))
             docs=comp_retriever.invoke(query)
             is_suggested = query in st.session_state.suggestions
             if not is_suggested and not check_prompt(query, docs[0].page_content if docs else ""):
