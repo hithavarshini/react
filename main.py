@@ -115,16 +115,31 @@ if uploaded_file:
                                 <div class='metric-value'>{bleu_val}</div>
                             </div>
                             """, unsafe_allow_html=True)
+                    
+                        related_questions = []
+                        for p in parts[5:]:
+                            if p.startswith('RELATED:'):
+                                related_questions = p.replace('RELATED:', '').split('###')
+                                break
+                        if related_questions:
+                            with st.expander("Related questions"):
+                                for i, rq in enumerate(related_questions):
+                                    if rq.strip():
+                                        if st.button(rq, key=f"related_{idx}_{i}", use_container_width=True):
+                                            st.session_state.related_question = rq
+                                            st.rerun()
         
-        query = st.chat_input('Enter your question here...')
+        query = None
         if 'selected_question' in st.session_state:
             query = st.session_state.selected_question
             del st.session_state.selected_question
+        elif 'related_question' in st.session_state:
+            query = st.session_state.related_question
+            del st.session_state.related_question
+        else:
+            query = st.chat_input('Enter your question here...')
         
         if query:
-            with st.chat_message("user"):
-                st.markdown(query)
-            st.session_state.chat_history.append(HumanMessage(content=query))
             docs=comp_retriever.invoke(query)
             is_suggested = query in st.session_state.suggestions
             if not is_suggested and not check_prompt(query, docs[0].page_content if docs else ""):
@@ -133,38 +148,15 @@ if uploaded_file:
                     st.error(msg)
                     st.session_state.chat_history.append(AIMessage(content=msg))
             else:
-                result=chain.invoke({'input':query,'chat_history':st.session_state.chat_history})
+                result=chain.invoke({'input':query,'chat_history':st.session_state.chat_history[:-1]})
                 pg=(docs[0].metadata.get('page',0)+1)
                 res=cos_similarity([query],docs,embeddings)[0][0]
                 rel=answer_relevance(result['answer'],docs[0].page_content,embeddings)
                 b=bleu_score([result['answer']], [docs[0].page_content])
-                answer_with_metrics = f"{result['answer']}|||PAGE:{pg}|||COS:{res:.4f}|||REL:{rel:.4f}|||BLEU:{b:.4f}"
+                ans=chain.invoke({'input':'Generate exactly 3 questions related to the query and the document. Format: one question per line, no numbering, no bullets.','chat_history':st.session_state.chat_history[:-1]})
+                related_questions=[q.strip().lstrip('0123456789.-) ') for q in ans['answer'].split('\n') if q.strip() and '?' in q][:3]
+                related_q_str = '|||RELATED:' + '###'.join(related_questions) if related_questions else ''
+                
+                answer_with_metrics = f"{result['answer']}|||PAGE:{pg}|||COS:{res:.4f}|||REL:{rel:.4f}|||BLEU:{b:.4f}{related_q_str}"
                 st.session_state.chat_history.append(AIMessage(content=answer_with_metrics))
-                with st.chat_message("assistant"):
-                    st.success(result['answer'])
-                    if st.button(f"📄 Go to Page {pg}", key=f"goto_page_{len(st.session_state.chat_history)}"):
-                        st.session_state.pdf_page = pg
-                        st.rerun()
-                with st.expander("📊 Evaluation Metrics"):
-                    st.markdown(f"""
-                    <div class='enterprise-card'>
-                        <div class='metric-label'>Cosine Similarity</div>
-                        <div class='metric-value'>{res:.4f}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    st.markdown(f"""
-                    <div class='enterprise-card'>
-                        <div class='metric-label'>Answer Relevance</div>
-                        <div class='metric-value'>{rel:.4f}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    st.markdown(f"""
-                    <div class='enterprise-card'>
-                        <div class='metric-label'>BLEU Score</div>
-                        <div class='metric-value'>{b:.4f}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with st.expander("Related questions"):
-                    ans=chain.invoke({'input':'Generate 3 questions related to the query and the document','chat_history':st.session_state.chat_history})
-                    st.markdown(ans['answer'])
-
+                st.rerun()
