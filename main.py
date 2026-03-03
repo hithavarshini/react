@@ -1,18 +1,18 @@
 import os
-import tempfile
 import streamlit as st
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_groq import ChatGroq
-from docloader import load_doc, get_path
-from splitter import get_splitter
 from langchain_huggingface import HuggingFaceEmbeddings
-from rerank import retrieve, get_reranker
-from ragchain import rag_chain
-from pdf import pdf_display
-from evalm import cos_similarity, bleu_score, answer_relevance
-from grails import check_prompt
-from styles import get_custom_css
 from dotenv import load_dotenv
+
+from src.utils.docloader import load_doc, get_path
+from src.utils.evalm import cos_similarity, bleu_score, answer_relevance
+from src.core.splitter import get_splitter
+from src.core.rerank import retrieve, get_reranker
+from src.core.ragchain import rag_chain
+from src.core.grails import check_prompt
+from src.ui.pdf import pdf_display
+from src.ui.styles import get_custom_css
 load_dotenv()
 st.set_page_config(
     page_title="Document Intelligence",
