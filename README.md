@@ -30,8 +30,6 @@ react/
 │   ├── ui/                # UI components
 │   │   ├── pdf.py         # PDF viewer component
 │   │   └── styles.py      # Custom CSS styling
-│   └── config/            # Configuration files
-├── tests/                 # Test files
 ├── main.py               # Main Streamlit application
 ├── requirements.txt      # Python dependencies
 └── .env                  # Environment variables
